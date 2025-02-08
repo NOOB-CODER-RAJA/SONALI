@@ -1,135 +1,163 @@
-import requests
+from pyrogram import Client, filters, enums
+from pyrogram.types import Message, ChatAction
+from motor.motor_asyncio import AsyncIOMotorClient as MongoClient
 import random
 import os
 import re
-from motor.motor_asyncio import AsyncIOMotorClient as MongoClient
-from pyrogram import Client, filters, enums
-from pyrogram.types import Message
+import requests
+import unicodedata
 from PURVIMUSIC import app as bot
+from pyrogram import idle
 
-# ✅ MongoDB connection
+# ✅ MongoDB Connection
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb+srv://teamdaxx123:teamdaxx123@cluster0.ysbpgcp.mongodb.net/?retryWrites=true&w=majority")
 mongo_client = MongoClient(MONGO_URL)
 vdb = mongo_client["vDb"]["v"]
 chatai_db = mongo_client["Word"]["WordDb"]
 
-# ✅ Together API Setup
-API_KEY = "abacf43bf0ef13f467283e5bc03c2e1f29dae4228e8c612d785ad428b32db6ce"
-BASE_URL = "https://api.together.xyz/v1/chat/completions"
+# ✅ API Configuration
+API_KEY = "YOUR_OPENAI_API_KEY"
+BASE_URL = "https://api.openai.com/v1/chat/completions"
+
+# ✅ Helper Function: Check If User Is Admin
+async def is_admins(chat_id: int):
+    admins = [member.user.id async for member in bot.get_chat_members(chat_id, filter=enums.ChatMembersFilter.ADMINISTRATORS)]
+    return admins
 
 # ✅ Custom Responses
 custom_responses = {
-    "hello": "Heyy! Mai Hinata hoon~ Aapki kya madad kar sakti hoon? 💕",
-    "hi": "Hii, kaise ho aap? 😊",
-    "hey": "Hey! Aap mujhe yaad kar rahe the? 😘",
-    "salam": "Wa Alaikum Assalam! Aap kaise hain? 🤗",
-    "namaste": "Namaste ji! Aapki kya seva kar sakti hoon? 🙏",
-    "kaise ho": "Mai bilkul badhiya! Aap sunao, kya haal hain? 😍",
-    "kya kar rahi ho": "Bas aapka wait kar rahi thi! Aap batao kya kar rahe ho? 😉"
+    "hello": "Hi there! 😊",
+    "how are you": "I'm just a bot, but I'm doing great!",
+    "who made you": "I was created by a developer who loves coding!",
+    "bye": "Goodbye! Have a great day! 😊",
+    "love you": "Aww! Love you too ❤️",
 }
 
-# ✅ Bad Words List (Stylish Fonts + Normal)
+# ✅ Bad Word List (Stylish & Normal)
 bad_words = [
-    "sex", "porn", "nude", "xxx", "b00bs", "boobs", "ass", "slut", "fuck", "bitch", "dick",
-    "s3x", "p0rn", "hentai", "69", "horny", "chut", "lund", "gand", "randi", "chod", "suck",
-    "pussy", "fuckoff", "muth", "masturbate", "virgin", "bj", "naked"
+    "sex", "porn", "nude", "fuck", "bitch", "dick", "pussy", "slut", "boobs", "cock", "asshole",
+    "रंडी", "चोद", "मादरचोद", "गांड", "लंड", "भोसड़ी", "हिजड़ा", "पागल", "नंगा"
 ]
-bad_words_regex = re.compile(r"\b(" + "|".join(bad_words) + r")\b", re.IGNORECASE)
+stylish_bad_words = [unicodedata.normalize("NFKD", word) for word in bad_words]
+bad_word_regex = re.compile(r'\b(' + "|".join(stylish_bad_words) + r')\b', re.IGNORECASE)
 
-# ✅ Admin Check Helper Function
-async def is_admins(chat_id: int):
-    admins = []
-    async for member in bot.get_chat_members(chat_id, filter=enums.ChatMembersFilter.ADMINISTRATORS):
-        admins.append(member.user.id)
-    return admins
-
-# ✅ Chatbot ON/OFF Commands
+# ✅ Command to Turn Chatbot OFF
 @bot.on_message(filters.command("chatbot off", prefixes=["/", ".", "?", "-"]) & filters.group)
 async def chatbot_off(client, message: Message):
     user = message.from_user.id
     chat_id = message.chat.id
 
     if user not in await is_admins(chat_id):
-        return await message.reply_text("❍ **You are not an admin!**")
+        return await message.reply_text("❍ ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ!")
 
-    await vdb.update_one({"chat_id": chat_id}, {"$set": {"disabled": True}}, upsert=True)
-    await message.reply_text("❍ **Chatbot disabled successfully! 💔**")
+    is_v = await vdb.find_one({"chat_id": chat_id})
+    if not is_v:
+        await vdb.insert_one({"chat_id": chat_id})
+        await message.reply_text("❍ ᴄʜᴀᴛʙᴏᴛ ᴅɪsᴀʙʟᴇᴅ!")
+    else:
+        await message.reply_text("❍ ᴄʜᴀᴛʙᴏᴛ ɪs ᴀʟʀᴇᴀᴅʏ ᴏғғ!")
 
+# ✅ Command to Turn Chatbot ON
 @bot.on_message(filters.command("chatbot on", prefixes=["/", ".", "?", "-"]) & filters.group)
 async def chatbot_on(client, message: Message):
     user = message.from_user.id
     chat_id = message.chat.id
 
     if user not in await is_admins(chat_id):
-        return await message.reply_text("❍ **You are not an admin!**")
+        return await message.reply_text("❍ ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ!")
 
-    await vdb.update_one({"chat_id": chat_id}, {"$set": {"disabled": False}}, upsert=True)
-    await message.reply_text("❍ **Chatbot enabled successfully! 🥳**")
+    is_v = await vdb.find_one({"chat_id": chat_id})
+    if is_v:
+        await vdb.delete_one({"chat_id": chat_id})
+        await message.reply_text("❍ ᴄʜᴀᴛʙᴏᴛ ᴇɴᴀʙʟᴇᴅ!")
+    else:
+        await message.reply_text("❍ ᴄʜᴀᴛʙᴏᴛ ɪs ᴀʟʀᴇᴀᴅʏ ᴏɴ!")
 
-# ✅ Main Chatbot Handler (Text + Sticker)
+# ✅ Main Chatbot Handler (Text & Stickers)
 @bot.on_message((filters.text | filters.sticker) & ~filters.bot)
 async def handle_messages(client, message: Message):
     chat_id = message.chat.id
+    text = message.text if message.text else ""
 
-    # ✅ If in group, check if chatbot is disabled
+    # ✅ Check If Chatbot Is OFF
     if message.chat.type in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP]:
-        is_v = await vdb.find_one({"chat_id": chat_id})
-        if is_v and is_v.get("disabled"):
-            return  
+        if await vdb.find_one({"chat_id": chat_id}):
+            return
 
-    await bot.send_chat_action(chat_id, enums.ChatAction.TYPING)
-
-    # ✅ Check for Bad Words & Delete if Found
-    if bad_words_regex.search(message.text or ""):
+    # ✅ Bad Word Filter (Delete Message)
+    if bad_word_regex.search(text):
         await message.delete()
         return
 
-    # ✅ Custom Response Handling
-    query = message.text.strip().lower()
+    # ✅ Check for Custom Responses
     for key in custom_responses:
-        if key in query:
+        if key in text.lower():
             await message.reply_text(custom_responses[key])
             return
 
-    # ✅ MongoDB Reply Handling
+    await bot.send_chat_action(chat_id, ChatAction.TYPING)
+
+    # ✅ MongoDB Check for Stickers & Text
     K = []
-    is_chat = chatai_db.find({"word": message.text})
-    async for x in is_chat:
-        K.append(x['text'])
-    
+    if message.sticker:
+        async for x in chatai_db.find({"word": message.sticker.file_unique_id}):
+            K.append(x['text'])
+    else:
+        async for x in chatai_db.find({"word": text}):
+            K.append(x['text'])
+
     if K:
         response = random.choice(K)
         is_text = await chatai_db.find_one({"text": response})
-
-        if is_text and is_text.get("check") == "sticker":
+        if is_text and is_text['check'] == "sticker":
             await message.reply_sticker(response)
         else:
             await message.reply_text(response)
         return
 
-    # ✅ AI Response with Same Language
-    detected_lang = detect_language(message.text)
+    # ✅ API Response with Auto-Language Detection
+    if text:
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+            "messages": [{"role": "user", "content": text}]
+        }
 
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
+        response = requests.post(BASE_URL, json=payload, headers=headers)
+        if response.status_code == 200:
+            response_data = response.json()
+            if "choices" in response_data and len(response_data["choices"]) > 0:
+                result = response_data["choices"][0]["message"]["content"]
+                await message.reply_text(result)
+            else:
+                await message.reply_text("❍ ᴇʀʀᴏʀ: API response missing!")
+        else:
+            await message.reply_text(f"❍ ᴇʀʀᴏʀ: API failed. Status: {response.status_code}")
 
-    payload = {
-        "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
-        "messages": [{"role": "user", "content": message.text}],
-        "response_format": {"type": detected_lang}
-    }
-
-    response = requests.post(BASE_URL, json=payload, headers=headers)
-
-    if response.status_code != 200 or not response.text.strip():
-        await message.reply_text(f"❍ ᴇʀʀᴏʀ: API request failed. Status: {response.status_code}")
+# ✅ Auto-Learn Messages & Stickers
+@bot.on_message(filters.reply & ~filters.bot)
+async def learn_new_data(client, message: Message):
+    if not message.reply_to_message:
         return
 
-    response_data = response.json()
-    if "choices" in response_data and len(response_data["choices"]) > 0:
-        result = response_data["choices"][0]["message"]["content"]
-        await message.reply_text(result)
-    else:
-        await message.reply_text("❍ ᴇʀʀᴏʀ: API request failed. Status: " + str(response.status_code))
+    bot_id = (await bot.get_me()).id
+    if message.reply_to_message.from_user.id != bot_id:
+        if message.sticker:
+            is_chat = await chatai_db.find_one({"word": message.reply_to_message.text, "id": message.sticker.file_unique_id})
+            if not is_chat:
+                await chatai_db.insert_one({
+                    "word": message.reply_to_message.text,
+                    "text": message.sticker.file_id,
+                    "check": "sticker",
+                    "id": message.sticker.file_unique_id
+                })
+        elif message.text:
+            is_chat = await chatai_db.find_one({"word": message.reply_to_message.text, "text": message.text})
+            if not is_chat:
+                await chatai_db.insert_one({"word": message.reply_to_message.text, "text": message.text, "check": "none"})
+
+# ✅ Start the bot
+idle()
