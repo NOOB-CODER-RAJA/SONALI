@@ -132,4 +132,4 @@ async def handle_messages(client, message: Message):
         result = response_data["choices"][0]["message"]["content"]
         await message.reply_text(result)
     else:
-        await message.reply_text("❍ ᴇʀʀᴏʀ:
+        await message.reply_text("❍ ᴇʀʀᴏʀ: API request failed. Status: " + str(response.status_code))
