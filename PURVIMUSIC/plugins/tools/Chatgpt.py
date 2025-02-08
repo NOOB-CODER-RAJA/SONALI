@@ -1,20 +1,19 @@
 import requests
 import random
 import os
-import regex as re
+import re
 from motor.motor_asyncio import AsyncIOMotorClient as MongoClient
 from pyrogram import Client, filters, enums
 from pyrogram.types import Message
-from PURVIMUSIC import app as bot  # Bot instance
-from pyrogram import idle
+from PURVIMUSIC import app as bot
 
-# ✅ MongoDB Connection
+# ✅ MongoDB connection
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb+srv://teamdaxx123:teamdaxx123@cluster0.ysbpgcp.mongodb.net/?retryWrites=true&w=majority")
 mongo_client = MongoClient(MONGO_URL)
 vdb = mongo_client["vDb"]["v"]
 chatai_db = mongo_client["Word"]["WordDb"]
 
-# ✅ API Configuration
+# ✅ Together API Setup
 API_KEY = "abacf43bf0ef13f467283e5bc03c2e1f29dae4228e8c612d785ad428b32db6ce"
 BASE_URL = "https://api.together.xyz/v1/chat/completions"
 
@@ -29,19 +28,22 @@ custom_responses = {
     "kya kar rahi ho": "Bas aapka wait kar rahi thi! Aap batao kya kar rahe ho? 😉"
 }
 
-# ✅ Bad Words List (Normal + Stylish fonts)
-BAD_WORDS = [
-    "sex", "nude", "porn", "xxx", "s3x", "hentai", "fuck", "bitch", "slut", "dick", "pussy", "boobs",
-    "cock", "asshole", "cum", "orgasm", "rape", "horny", "masturbate", "sεx", "fυck", "bιtch", "dιck"
+# ✅ Bad Words List (Stylish Fonts + Normal)
+bad_words = [
+    "sex", "porn", "nude", "xxx", "b00bs", "boobs", "ass", "slut", "fuck", "bitch", "dick",
+    "s3x", "p0rn", "hentai", "69", "horny", "chut", "lund", "gand", "randi", "chod", "suck",
+    "pussy", "fuckoff", "muth", "masturbate", "virgin", "bj", "naked"
 ]
-BAD_WORDS_REGEX = re.compile(r"|".join(BAD_WORDS), re.IGNORECASE)
+bad_words_regex = re.compile(r"\b(" + "|".join(bad_words) + r")\b", re.IGNORECASE)
 
-# ✅ Helper function: Check if user is admin
+# ✅ Admin Check Helper Function
 async def is_admins(chat_id: int):
-    admins = [member.user.id for member in await bot.get_chat_members(chat_id, filter=enums.ChatMembersFilter.ADMINISTRATORS)]
+    admins = []
+    async for member in bot.get_chat_members(chat_id, filter=enums.ChatMembersFilter.ADMINISTRATORS):
+        admins.append(member.user.id)
     return admins
 
-# ✅ Chatbot OFF Command (Fix applied)
+# ✅ Chatbot ON/OFF Commands
 @bot.on_message(filters.command("chatbot off", prefixes=["/", ".", "?", "-"]) & filters.group)
 async def chatbot_off(client, message: Message):
     user = message.from_user.id
@@ -53,7 +55,6 @@ async def chatbot_off(client, message: Message):
     await vdb.update_one({"chat_id": chat_id}, {"$set": {"disabled": True}}, upsert=True)
     await message.reply_text("❍ **Chatbot disabled successfully! 💔**")
 
-# ✅ Chatbot ON Command (Fix applied)
 @bot.on_message(filters.command("chatbot on", prefixes=["/", ".", "?", "-"]) & filters.group)
 async def chatbot_on(client, message: Message):
     user = message.from_user.id
@@ -65,57 +66,59 @@ async def chatbot_on(client, message: Message):
     await vdb.update_one({"chat_id": chat_id}, {"$set": {"disabled": False}}, upsert=True)
     await message.reply_text("❍ **Chatbot enabled successfully! 🥳**")
 
-# ✅ Main Chatbot Handler
+# ✅ Main Chatbot Handler (Text + Sticker)
 @bot.on_message((filters.text | filters.sticker) & ~filters.bot)
 async def handle_messages(client, message: Message):
     chat_id = message.chat.id
-    text = message.text or ""
 
-    # 🚨 Bad Word Check
-    if BAD_WORDS_REGEX.search(text):
+    # ✅ If in group, check if chatbot is disabled
+    if message.chat.type in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP]:
+        is_v = await vdb.find_one({"chat_id": chat_id})
+        if is_v and is_v.get("disabled"):
+            return  
+
+    await bot.send_chat_action(chat_id, enums.ChatAction.TYPING)
+
+    # ✅ Check for Bad Words & Delete if Found
+    if bad_words_regex.search(message.text or ""):
         await message.delete()
         return
 
-    # 🚀 Check if chatbot is OFF in groups
-    chat_status = await vdb.find_one({"chat_id": chat_id})
-    if chat_status and chat_status.get("disabled", False):
-        return  # Chatbot is off, do nothing
-
-    # ✅ Typing Indicator
-    await bot.send_chat_action(chat_id, enums.ChatAction.TYPING)
-
-    # ✅ Check for Custom Response first
+    # ✅ Custom Response Handling
+    query = message.text.strip().lower()
     for key in custom_responses:
-        if key in text:
+        if key in query:
             await message.reply_text(custom_responses[key])
             return
 
-    # ✅ Try fetching reply from MongoDB
+    # ✅ MongoDB Reply Handling
     K = []
-    is_chat = chatai_db.find({"word": text})
-
-    k = await chatai_db.find_one({"word": text})
-    if k:
-        async for x in is_chat:
-            K.append(x['text'])
+    is_chat = chatai_db.find({"word": message.text})
+    async for x in is_chat:
+        K.append(x['text'])
+    
+    if K:
         response = random.choice(K)
         is_text = await chatai_db.find_one({"text": response})
 
-        if is_text and is_text['check'] == "sticker":
+        if is_text and is_text.get("check") == "sticker":
             await message.reply_sticker(response)
         else:
             await message.reply_text(response)
-        return  # Stop here if MongoDB has reply
+        return
 
-    # ✅ If no MongoDB reply, call API (Language Matching)
+    # ✅ AI Response with Same Language
+    detected_lang = detect_language(message.text)
+
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json"
     }
-    
+
     payload = {
         "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
-        "messages": [{"role": "user", "content": text}]
+        "messages": [{"role": "user", "content": message.text}],
+        "response_format": {"type": detected_lang}
     }
 
     response = requests.post(BASE_URL, json=payload, headers=headers)
@@ -129,29 +132,4 @@ async def handle_messages(client, message: Message):
         result = response_data["choices"][0]["message"]["content"]
         await message.reply_text(result)
     else:
-        await message.reply_text("❍ ᴇʀʀᴏʀ: No response from API.")
-
-# ✅ Learn New Messages & Stickers (Auto-Learn Feature)
-@bot.on_message(filters.reply & ~filters.bot)
-async def learn_new_data(client, message: Message):
-    if not message.reply_to_message:
-        return
-
-    bot_id = (await bot.get_me()).id
-    if message.reply_to_message.from_user.id != bot_id:
-        if message.sticker:
-            is_chat = await chatai_db.find_one({"word": message.reply_to_message.text, "id": message.sticker.file_unique_id})
-            if not is_chat:
-                await chatai_db.insert_one({
-                    "word": message.reply_to_message.text,
-                    "text": message.sticker.file_id,
-                    "check": "sticker",
-                    "id": message.sticker.file_unique_id
-                })
-        elif message.text:
-            is_chat = await chatai_db.find_one({"word": message.reply_to_message.text, "text": message.text})
-            if not is_chat:
-                await chatai_db.insert_one({"word": message.reply_to_message.text, "text": message.text, "check": "none"})
-
-# ✅ Start the bot
-idle()
+        await message.reply_text("❍ ᴇʀʀᴏʀ:
