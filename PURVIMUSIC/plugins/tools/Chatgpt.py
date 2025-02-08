@@ -1,29 +1,29 @@
+import openai
 import requests
 from pyrogram import Client, filters
 from pyrogram.enums import ChatAction
 from PURVIMUSIC import app  # Ensure this is correctly imported
 
-async def fetch_med_info(client, message, query):
-    """API से data fetch करे और reply करे"""
+# 🔑 Yahan apni OpenAI API key daalein
+openai.api_key = "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"
+
+async def chat_with_gpt(prompt):
+    """OpenAI API se response fetch kare"""
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",  # Ya "gpt-3.5-turbo"
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"**API Error:** {e}"
+
+@app.on_message(filters.text & ~filters.bot)  # Bot khud se reply na kare
+async def chat_mode(client, message):
+    query = message.text.strip()
     if not query:
-        return  # खाली message का कोई reply नहीं करेगा
+        return  # Empty message ignore karega
 
     await client.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
-
-    api_url = f"https://chatwithai.codesearch.workers.dev/?chat={query}"
-    try:
-        response = requests.get(api_url)
-        if response.status_code == 200:
-            data = response.json()
-            reply = data.get("data", "**sᴏʀʀʏ, ɪ ᴄᴏᴜʟᴅɴ'ᴛ ғᴇᴛᴄʜ ᴛʜᴇ ᴅᴀᴛᴀ.**")
-        else:
-            reply = "**ғᴀɪʟᴇᴅ ᴛᴏ ғᴇᴛᴄʜ ᴅᴀᴛᴀ ғʀᴏᴍ ᴛʜᴇ ᴀᴘɪ.**"
-    except Exception as e:
-        reply = f"**ᴀɴ ᴇʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ :** {e}"
-
+    reply = await chat_with_gpt(query)
     await message.reply_text(reply)
-
-@app.on_message(filters.text & ~filters.bot)  # Bot खुद से reply ना करे
-async def chat_mode(client, message):
-    query = message.text
-    await fetch_med_info(client, message, query)
