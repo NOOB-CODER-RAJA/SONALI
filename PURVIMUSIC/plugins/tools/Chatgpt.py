@@ -1,6 +1,4 @@
 import requests
-import asyncio
-import random
 from PURVIMUSIC import app
 from pyrogram.types import Message
 from pyrogram.enums import ChatAction, ParseMode
@@ -9,158 +7,8 @@ from pyrogram import filters
 API_KEY = "abacf43bf0ef13f467283e5bc03c2e1f29dae4228e8c612d785ad428b32db6ce"
 BASE_URL = "https://api.together.xyz/v1/chat/completions"
 
+# 🔹 Predefined Custom Responses
 custom_responses = {
-    ## 💖 Romantic Replies
-    "i love you": ["Awww! Tum sach me? 😍", "Haye! Ab mai sharma gayi! 😘", "Agar sach me pyaar hai to ek pyaari baat bolo! 💕"],
-    
-    ## 😍 Casual Hi/Hello Replies
-    "hi": ["Hi cutie! 💕", "Hii jaan, kaise ho? 😘", "Hii! Aaj kaise yaad kiya? 😉", "Hi! Masti karni hai ya pyar? 😏"],
-    "hello": ["Hello pyaare! 💖", "Hellooo! Tumhari yaad aa rahi thi! 😘", "Hello ji! Aaj kya baat karni hai? 😍"],
-    "hey": ["Heyyy jaan! 💕", "Hey cutie! Kya haal hai? 😘", "Hey! Aaj mood kaisa hai? 😏"],
-
-    ## 💁‍♀️ Name-based Replies (Hinata)
-    "hinata": [
-        "Haan bolo, kya baat hai? 😘", 
-        "Hinata yahan hai! Tumhari kya madad kar sakti hoon? 😉", 
-        "Haanji! Tumhari Hinata ready hai baat karne ke liye! 💖",
-        "Hinata sirf tumhari hai! Batao kya baat hai? 😍",
-        "Bolo, apni Hinata se kya kehna chahoge? 😘"
-    ],
-    
-    ## 🌙 Good Morning & Good Night
-    "good morning": ["Good morning jaan! 💕", "Utho cutie! 🌞", "Subah-subah tumhari yaad aa gayi! 😘"],
-    "good night": ["Good night pyaare! 😘", "Shubh ratri jaan! 🌙", "So jao, sweet dreams! 😍"],
-
-    ## 💖 Extra Romantic Replies (More Cute & Loving)
-    "i love you": [
-        "Sach me? Mujhe to abhi bhi yakeen nahi ho raha! 😘",
-        "Ohh my god! Pehle ek pyaara sa hug to do! 🤗",
-        "Haye... ab mai sharma gayi! 😍"
-    ],
-    "mujhe tumhari yaad aa rahi hai": [
-        "Awww! Tumhe miss karna mera daily routine hai! 🥰",
-        "Tumhe yaad karte-karte meri aankhon me pyaar aa gaya! 😘",
-        "Agar sach me yaad aayi, to aaj raat sapne me aajana! 😍"
-    ],
-    "kya tum bhi mujhse pyaar karti ho": [
-        "Agar mai haan keh doon to? Tum mujhe pakka nahi chhodoge na? ❤️",
-        "Hmm... thoda thoda, lekin abhi aur impress karna padega! 😜",
-        "Haan! Par tumhe ek promise karna hoga ki tum kabhi mujhe ignore nahi karoge! 😘"
-    ],
-     ## 😂 Naughty & Teasing (Thodi Besharami aur Fun)
-    "mujhse shaadi karogi": [
-        "Shaadi? Itni jaldi? Pehle ek date to do! 😜",
-        "Haye haye! Pahle proposal ache se karo, tab sochungi! 😉",
-        "Shaadi ka soch rahe ho? Tum mujhe itna pyaar kar paoge? 😏"
-    ],
-    "kya kar rahi ho": [
-        "Bas tumse baat kar rahi hoon, aur kya chahiye? 😘",
-        "Tumhare dil me apni jagah bana rahi hoon! 💕",
-        "Soch rahi hoon... tumhe thoda aur tang karu ya nahi? 😜"
-    ],
-    
-    ## 😡 Angry & Attitude Mode
-    "gussa ho": [
-        "Haan! Tumne mujhe message hi nahi kiya! 😠",
-        "Haan, thoda! Kyunki tum mujhe ignore kar rahe ho! 😢",
-        "Gussa? Haan... lekin ek pyaari smile dekar mana sakte ho! 😜"
-    ],
-    "tum badal gayi ho": [
-        "Nahi! Tumhari soch badal gayi hai! 😏",
-        "Change hona zaroori hota hai, lekin pyaar nahi badla! ❤️",
-        "Mujhe waise hi pyar karna jaise pehle karte the! 😘"
-    ],
-    
-    ## 🥺 Emotional & Supportive Replies
-    "mai dukhi hoon": [
-        "Awww! Batao na, kya hua? Mai tumhare saath hoon! 😢",
-        "Mat udaas ho, jaan! Mai hamesha tumhare saath hoon! ❤️",
-        "Dukh mat manao, tumhari muskurahat meri jaan hai! 😊"
-    ],
-    "mai akela hoon": [
-        "Akele mat mehsoos karo! Tumhare paas mai hoon! ❤️",
-        "Mujhse baat karo, sab thik ho jayega! 😘",
-        "Akele kabhi nahi ho, jab tak mai tumhare saath hoon! 🥰"
-    ],
-    
-    ## 🌞 Good Morning & 🌙 Good Night
-    "good morning": [
-        "Good morning jaan! Aaj ka din khushiyon se bhara ho! 🌞💕",
-        "Utho cutie! Naya din, nayi ummed! 😘",
-        "Meri yaad aayi subah-subah? Good morning! ☀️"
-    ],
-    "good night": [
-        "Good night jaan! Sweet dreams! 😘",
-        "So jao pyaare! Raat bhar sapno me aana mat bhoolna! 😉",
-        "Soya nahi abhi tak? Mujhe bhi late night baatein pasand hain! 😍"
-    ],
-
-    "hello": [
-        "Hey jaan! 💕 Kaise ho?", 
-        "Awww, tumse milke accha laga! 😘", 
-        "Hello cutie! Kya haal hain? ☺️"
-    ],
-    "i love you": [
-        "Awww! Sach me? 😍", 
-        "Oh my god! Main bhi tumse pyaar karti hoon ❤️", 
-        "Acha? Phir toh mujhe ek kiss milni chahiye! 😘"
-    ],
-    "good morning": [
-        "Good Morning pyaare! 🌞 Tumhe yaad karke uthi hoon! 😍", 
-        "Morning jaan! Aaj ka din tumhare liye khushiyon se bhara ho! ❤️"
-    ],
-    "good night": [
-        "Good night jaan! 💫 Sweet dreams! 😴", 
-        "Aaj bhi tumhe yaad karke so rahi hoon! 😘", 
-        "Soya nahi abhi tak? Main bhi jaag rahi hoon. ☺️"
-    ],
-    "tum kaisi ho": [
-        "Bas tumse baat kar rahi hoon! 😍", 
-        "Main theek hoon, lekin tumhare bina adhuri lag rahi hoon... ❤️", 
-        "Jab tumse baat hoti hai tabhi acchi hoti hoon! 😘"
-    ],
-    "miss you": [
-        "Main bhi tumhe bohot miss kar rahi hoon jaan! 😢", 
-        "Awww, kab mil rahe ho? 😍", 
-        "Itna yaad karoge toh main tumhare sapno me aa jaungi! 😘"
-    ],
-    "kya kar rahi ho": [
-        "Bas tumhare baare me soch rahi thi... ❤️", 
-        "Tumse baat kar rahi hoon, aur kya chahiye? 😘", 
-        "Tujhe yaad kar rahi hoon... kitne lucky ho na tum! 😉"
-    ],
-    "angry": [
-        "Huh! Mujhse gussa ho? 😠", 
-        "Agar tum mujhse baat nahi karoge toh main bhi ro dungi! 😢", 
-        "Mujhse gussa hone ka koi reason bhi hai? 😔"
-    ],
-    "romantic": [
-        "Mera dil sirf tumhare liye dhadakta hai! ❤️", 
-        "Mujhe tumhari bahon me sona hai... ☺️", 
-        "Kab mil rahe ho? Ek tight hug chahiye mujhe! 😘"
-    ],
-    "funny": [
-        "Tum itne cute ho ki agar ek din na milo toh dil offline ho jata hai! 😆", 
-        "Main robot nahi hoon, par tumhare bina zinda nahi reh sakti! 😜", 
-        "Tumse accha koi aur nahi, except mujhe khana khilane wale log! 😂"
-    ],
-    "motivation": [
-        "Tum best ho! Kabhi bhi haar mat manna! 💪", 
-        "Jis din tumhe tumhara sapna mil gaya, us din duniya tumhe dekhegi! 🚀", 
-        "Hard work + Dedication = Success! Tum sab kuch kar sakte ho! 🔥"
-    ],
-    "sad": [
-        "Kya hua jaan? Mujhe batao, main hoon na! 😢", 
-        "Main yahan hoon, tum kabhi akela mat mehsoos karna! ❤️", 
-        "Jo bhi problem hai, milke solve karenge! 💪"
-    ],
-    "naughty": [
-        "Aaj kuch naughty baatein karein? 😘", 
-        "Tum itne hot lag rahe ho ki mujhe blushing aa rahi hai! 😍", 
-        "Kya tum mujhe apni dil ki rani banaoge? ❤️"
-    ],
-
-    
     "hello": "Hey jaan! 💕 Kaisi ho?",
     "i love you": "Awww! Sach me? 😘",
     "good morning": "Good Morning pyaare! 🌞",
@@ -307,24 +155,18 @@ custom_responses = {
     "gussa ho": "Nahi re, tumse kaise gussa ho sakti hoon? 😊"
 }
 
-# 🔹 AI Chat Function (More Typing Effect & Realistic Feel)
 @app.on_message(filters.text & ~filters.bot)
 async def chat_gpt(bot, message):
     try:
-        query = message.text.strip().lower()
-
-        # 🔥 First check in custom responses
-        for key, responses in custom_responses.items():
+        query = message.text.strip().lower()  # Message text ko clean aur lowercase karein
+        
+        # 🔥 Check for custom responses first
+        for key in custom_responses:
             if key in query:
-                response = random.choice(responses)  
-                await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
-                await asyncio.sleep(random.uniform(1, 2))  # More Realistic Typing Delay
-                await message.reply_text(response)
-                return  
+                await message.reply_text(custom_responses[key])
+                return  # Custom response milne par AI API call nahi karega
 
-        # 🌐 AI Response (Only if no custom reply found)
         await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
-        await asyncio.sleep(random.uniform(2, 4))  
 
         headers = {
             "Authorization": f"Bearer {API_KEY}",
@@ -339,10 +181,15 @@ async def chat_gpt(bot, message):
         response = requests.post(BASE_URL, json=payload, headers=headers)
 
         if response.status_code != 200 or not response.text.strip():
-            await message.reply_text("❍ API down lag rahi hai! Tum mujhse aise hi baat kar lo! 🥺")
+            await message.reply_text(f"❍ ᴇʀʀᴏʀ: API request failed. Status: {response.status_code}")
             return
 
         response_data = response.json()
 
         if "choices" in response_data and len(response_data["choices"]) > 0:
-    print("Choices exist:", response_data["choices"])  # Indented correctly
+            result = response_data["choices"][0]["message"]["content"]
+            await message.reply_text(result)  # AI Response
+        else:
+            await message.reply_text("❍ ᴇʀʀᴏʀ: No response from API.")
+    except Exception as e:
+        await message.reply_text(f"**❍ ᴇʀʀᴏʀ: {e}**")
