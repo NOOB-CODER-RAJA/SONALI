@@ -15,6 +15,10 @@ mongo_client = MongoClient(MONGO_URL)
 status_db = mongo_client["ChatbotStatus"]["status"]
 chatai_db = mongo_client["Word"]["WordDb"]
 
+# ✅ Fix for `vdb` (chatbot status)
+vdb = mongo_client["ChatBot"]["ChatStatus"]
+
+
 # ✅ API Configuration
 API_KEY = "abacf43bf0ef13f467283e5bc03c2e1f29dae4228e8c612d785ad428b32db6ce"
 BASE_URL = "https://api.together.xyz/v1/chat/completions"
