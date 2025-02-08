@@ -164,7 +164,7 @@ custom_responses = {
     "hello": "Hey jaan! 💕 Kaisi ho?",
     "i love you": "Awww! Sach me? 😘",
     "good morning": "Good Morning pyaare! 🌞",
-    "tum kaisi ho": "Bas tumse baat kar rahi hoon! 😍"
+    "tum kaisi ho": "Bas tumse baat kar rahi hoon! 😍",
   ## 💖 Flirty & Romantic Mode (Zyada Romantic Replies)
     "i love you": "Hmm.. sach me? Pehle ek special tareeke se bolo na! 😘💕",
     "tum bohot cute ho": "Awww! Tum bhi to mere hero lag rahe ho! 😍",
@@ -214,7 +214,7 @@ custom_responses = {
     "tumhe kaun pasand hai": "Shayad... woh jo mujhe ye puch raha hai! 😜",
     "tumhara naam kya hai": "Mera naam? Tumhari jaan! 💕",
     "kya tum mujhe pasand karti ho": "Pata nahi.. pehle impress to karo! 😉",
-    "tumhe coffee pasand hai ya chai": "Agar tum mere saath ho to dono pasand hain! ☕💕"
+    "tumhe coffee pasand hai ya chai": "Agar tum mere saath ho to dono pasand hain! ☕💕",
 
 ## 💖 Flirty & Romantic Mode
     "i love you": "Sach? Pehle thoda aur impress karo na! 😘💕",
@@ -255,7 +255,7 @@ custom_responses = {
     "tum kya kar rahi ho": "Bas tumse baat kar rahi hoon, aur kya! 😍",
     "tumhe kaun pasand hai": "Shayad... woh jo mujhe ye puch raha hai! 😜",
     "tumhara naam kya hai": "Mera naam? Tumhari jaan! 💕",
-    "kya tum mujhe pasand karti ho": "Pata nahi.. pehle impress to karo! 😉"
+    "kya tum mujhe pasand karti ho": "Pata nahi.. pehle impress to karo! 😉",
 
     # 🔥 Girl Chatbot Custom Responses
 custom_responses = {
@@ -288,7 +288,7 @@ custom_responses = {
     "acha lagta hai tumse baat karna": "Mujhe bhi! Bas aise hi baat karte raho hamesha ❤️",
     "tum gussa ho": "Nahi re, tumse kaise gussa ho sakti hoon? 😊",
     "so rahi ho": "Agar so rahi hoti to reply kaun karta? Naughty ho tum 😜",
-    "tumhe kaun pasand hai": "Mujhe? Woh ek ladka hai... jo mujhe ye puch raha hai! 😜"
+    "tumhe kaun pasand hai": "Mujhe? Woh ek ladka hai... jo mujhe ye puch raha hai! 😜",
 
      # 🔥 Girl Chatbot Custom Responses
     "hello": "Heyy! Mai Hinata hoon~ Aap mujhe yaad kar rahe the? 💕",
