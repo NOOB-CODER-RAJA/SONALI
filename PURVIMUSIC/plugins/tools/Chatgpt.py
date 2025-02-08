@@ -1,5 +1,5 @@
 import requests
-from PURVIMUSIC import app
+from SONALI import app
 from pyrogram.types import Message
 from pyrogram.enums import ChatAction
 from pyrogram import filters
@@ -31,7 +31,8 @@ custom_responses = {
 async def chat_gpt(bot, message: Message):
     try:
         query = message.text.strip().lower() if message.text else None  # Message text clean aur lowercase karein
-        sticker_id = message.sticker.file_unique_id if message.sticker else None  # Sticker ID store karein
+        sticker_id = message.sticker.file_id if message.sticker else None  # Sticker File ID store karein
+        sticker_unique_id = message.sticker.file_unique_id if message.sticker else None  # Unique ID bhi rakhein
 
         # Bot Typing Indicator ON
         await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
@@ -49,12 +50,14 @@ async def chat_gpt(bot, message: Message):
 
         # 2️⃣ **Check MongoDB for Stored Replies**
         K = []
+        is_chat = None
+        k = None
 
         if query:
             is_chat = chatai_db.find({"word": query})  # AsyncIOMotorCursor
             k = await chatai_db.find_one({"word": query})
-        elif sticker_id:
-            k = await chatai_db.find_one({"text": sticker_id, "check": "sticker"})  # Sticker check
+        elif sticker_unique_id:
+            k = await chatai_db.find_one({"word": sticker_unique_id, "check": "sticker"})  # Sticker check
 
         if k:
             if query:
@@ -62,7 +65,7 @@ async def chat_gpt(bot, message: Message):
                     K.append(x['text'])
                 response = random.choice(K)
             else:
-                response = k['word']  # Sticker ke liye response word me store hoga
+                response = k['text']  # Sticker ke liye response text me hoga
             
             is_text = await chatai_db.find_one({"text": response})
 
