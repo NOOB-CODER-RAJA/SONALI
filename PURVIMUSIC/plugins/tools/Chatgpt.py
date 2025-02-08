@@ -344,4 +344,4 @@ async def chat_gpt(bot, message):
 
         response_data = response.json()
 
-        if "choices" in response_data and len(response_data["choices"]) > 0
+        if "choices" in response_data and len(response_data["choices"]) > 0:
