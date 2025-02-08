@@ -8,7 +8,7 @@ import os
 import random
 
 # MongoDB connection
-MONGO_URL = os.environ.get("MONGO_URL", "mongodb+srv://teamdaxx123:teamdaxx123@cluster0.ysbpgcp.mongodb.net/?retryWrites=true&w=majority")
+MONGO_URL = os.environ.get("MONGO_URL", "mongodb+srv://bikash:bikash@bikash.3jkvhp7.mongodb.net/?retryWrites=true&w=majority")
 mongo_client = MongoClient(MONGO_URL)
 chatai_db = mongo_client["Word"]["WordDb"]
 
@@ -27,38 +27,56 @@ custom_responses = {
     "kya kar rahi ho": "Bas aapka wait kar rahi thi! Aap batao kya kar rahe ho? 😉"
 }
 
-@app.on_message(filters.text & ~filters.bot)
+@app.on_message(filters.text | filters.sticker & ~filters.bot)
 async def chat_gpt(bot, message: Message):
     try:
-        query = message.text.strip().lower()  # Message text ko clean aur lowercase karein
+        query = message.text.strip().lower() if message.text else None  # Message text clean aur lowercase karein
+        sticker_id = message.sticker.file_unique_id if message.sticker else None  # Sticker ID store karein
 
         # Bot Typing Indicator ON
         await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
 
         # 1️⃣ **Check for Custom Responses First**
-        for key in custom_responses:
-            if key in query:
-                await message.reply_text(custom_responses[key])
-                return  # Agar custom response mil gaya, toh yahin return ho jaye
+        if query:
+            for key in custom_responses:
+                if key in query:
+                    reply_text = custom_responses[key]
+                    await message.reply_text(reply_text)
+                    
+                    # **MongoDB me Save Karo**
+                    await chatai_db.insert_one({"word": query, "text": reply_text, "check": "none"})
+                    return  # Agar custom response mil gaya, toh yahin return ho jaye
 
         # 2️⃣ **Check MongoDB for Stored Replies**
         K = []
-        is_chat = chatai_db.find({"word": query})  # AsyncIOMotorCursor
-        
-        k = await chatai_db.find_one({"word": query})
+
+        if query:
+            is_chat = chatai_db.find({"word": query})  # AsyncIOMotorCursor
+            k = await chatai_db.find_one({"word": query})
+        elif sticker_id:
+            k = await chatai_db.find_one({"text": sticker_id, "check": "sticker"})  # Sticker check
+
         if k:
-            async for x in is_chat:
-                K.append(x['text'])
-            response = random.choice(K)
+            if query:
+                async for x in is_chat:
+                    K.append(x['text'])
+                response = random.choice(K)
+            else:
+                response = k['word']  # Sticker ke liye response word me store hoga
+            
             is_text = await chatai_db.find_one({"text": response})
 
             if is_text and is_text['check'] == "sticker":
-                await message.reply_sticker(response)
+                await message.reply_sticker(is_text["text"])  # Sticker ID se reply karein
             else:
                 await message.reply_text(response)
+            
             return  # Agar MongoDB me mil gaya toh API call nahi hoga
 
         # 3️⃣ **AI API Call (if no custom or MongoDB response)**
+        if not query:  # Sticker ka AI response nahi chahiye
+            return
+
         await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
 
         headers = {
@@ -82,6 +100,10 @@ async def chat_gpt(bot, message: Message):
         if "choices" in response_data and len(response_data["choices"]) > 0:
             result = response_data["choices"][0]["message"]["content"]
             await message.reply_text(result)  # AI Response
+
+            # **MongoDB me AI ka response Save Karo**
+            await chatai_db.insert_one({"word": query, "text": result, "check": "none"})
+
         else:
             await message.reply_text("❍ ᴇʀʀᴏʀ: No response from API.")
     except Exception as e:
