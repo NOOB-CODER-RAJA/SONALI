@@ -1,7 +1,7 @@
 import requests
 from pyrogram import Client, filters
 from pyrogram.enums import ChatAction
-from SONALI_MUSIC import app  # Ensure this is correctly imported
+from PURVIMUSIC import app  # Ensure this is correctly imported
 
 async def fetch_med_info(client, message, query):
     """API से data fetch करे और reply करे"""
