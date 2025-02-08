@@ -257,8 +257,6 @@ custom_responses = {
     "tumhara naam kya hai": "Mera naam? Tumhari jaan! 💕",
     "kya tum mujhe pasand karti ho": "Pata nahi.. pehle impress to karo! 😉",
 
-    # 🔥 Girl Chatbot Custom Responses
-custom_responses = {
     ## 💖 Flirty & Romantic Mode
     "i love you": "Haye! Sach? 😳 Pehle thoda aur prove to karo! 😜💕",
     "tum bohot cute ho": "Awww! Bas bas, itni taarif mat karo, mai sharma jaungi 🥰",
