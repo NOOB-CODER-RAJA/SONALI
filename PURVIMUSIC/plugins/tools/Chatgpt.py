@@ -282,15 +282,37 @@ async def chatbot_callback(client, query: CallbackQuery):
         await query.answer("🚫 ᴄʜᴀᴛʙᴏᴛ ᴅɪsᴀʙʟᴇᴅ !!", show_alert=True)
         await query.edit_message_text(f"**✦ ᴄʜᴀᴛʙᴏᴛ ʜᴀs ʙᴇᴇɴ ᴅɪsᴀʙʟᴇᴅ ɪɴ {query.message.chat.title}.**")
 
-# ✅ Main Chatbot Handler
-@bot.on_message((filters.text | filters.sticker) & ~filters.bot)
-async def handle_messages(client, message: Message):
+# ✅ Main Chatbot Handler (Text & Stickers)
+@bot.on_message(filters.text | filters.sticker & ~filters.bot)
+async def chatbot_reply(client, message: Message):
     chat_id = message.chat.id
-    text = normalize_text(message.text) if message.text else ""
+    text = message.text.strip() if message.text else ""
+    bot_username = (await bot.get_me()).username.lower()
 
     # ✅ Check If Chatbot Is OFF
-    chat_status = await status_db.find_one({"chat_id": chat_id})
-    if chat_status and chat_status.get("status") == "disabled":
+    if message.chat.type in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP]:
+        if await vdb.find_one({"chat_id": chat_id}):
+            return
+
+    # ✅ Bot Reply Condition (Only Reply If)
+    should_reply = False
+
+    # (1) Bot ke kisi message ka reply ho
+    if message.reply_to_message and message.reply_to_message.from_user.id == (await bot.get_me()).id:
+        should_reply = True
+
+    # (2) Message me bot mention ho (@BotName)
+    elif f"@{bot_username}" in text.lower():
+        should_reply = True
+        text = text.replace(f"@{bot_username}", "").strip()
+
+    # (3) Sirf bot ka naam likha ho (mention ke bina)
+    elif bot_username in text.lower():
+        should_reply = True
+        text = text.replace(bot_username, "").strip()
+
+    # Agar condition match nahi hui to return
+    if not should_reply:
         return
 
     # ✅ Bad Word Filter (Delete Message)
@@ -298,26 +320,26 @@ async def handle_messages(client, message: Message):
         await message.delete()
         return
 
-    await bot.send_chat_action(chat_id, enums.ChatAction.TYPING)
-
-    # ✅ Check for Custom Responses First
+    # ✅ Custom Response Check
     for key in custom_responses:
         if key in text.lower():
             await message.reply_text(custom_responses[key])
             return
 
-    # ✅ MongoDB Check for Stickers & Text
-    response_list = []
+    # ✅ Show Typing Action
+    await bot.send_chat_action(chat_id, ChatAction.TYPING)
 
+    # ✅ MongoDB Check for Stickers & Text
+    K = []
     if message.sticker:
         async for x in chatai_db.find({"word": message.sticker.file_unique_id}):
-            response_list.append(x['text'])
+            K.append(x['text'])
     else:
         async for x in chatai_db.find({"word": text}):
-            response_list.append(x['text'])
+            K.append(x['text'])
 
-    if response_list:
-        response = random.choice(response_list)
+    if K:
+        response = random.choice(K)
         is_text = await chatai_db.find_one({"text": response})
         if is_text and is_text['check'] == "sticker":
             await message.reply_sticker(response)
@@ -325,43 +347,14 @@ async def handle_messages(client, message: Message):
             await message.reply_text(response)
         return
 
-    # ✅ API Call (Auto-Detect Language)
-    if text:
-        headers = {
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
-            "messages": [{"role": "user", "content": text}]
-        }
+    # ✅ API Response with Auto-Language Detection
+    headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
+    payload = {"model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", "messages": [{"role": "user", "content": text}]}
 
-        response = requests.post(BASE_URL, json=payload, headers=headers)
-        if response.status_code == 200:
-            result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "❍ API Error!")
-            await message.reply_text(result)
-        else:
-            await message.reply_text(f"❍ API failed. Status: {response.status_code}")
-
-# ✅ Auto-Learn Messages & Stickers
-@bot.on_message(filters.reply & ~filters.bot)
-async def learn_new_data(client, message: Message):
-    if not message.reply_to_message:
-        return
-
-    bot_id = (await bot.get_me()).id
-    if message.reply_to_message.from_user.id != bot_id:
-        if message.sticker:
-            is_chat = await chatai_db.find_one({"word": message.reply_to_message.text, "id": message.sticker.file_unique_id})
-            if not is_chat:
-                await chatai_db.insert_one({
-                    "word": message.reply_to_message.text,
-                    "text": message.sticker.file_id,
-                    "check": "sticker",
-                    "id": message.sticker.file_unique_id
-                })
-        elif message.text:
-            is_chat = await chatai_db.find_one({"word": message.reply_to_message.text, "text": message.text})
-            if not is_chat:
-                await chatai_db.insert_one({"word": message.reply_to_message.text, "text": message.text, "check": "none"})
-
+    response = requests.post(BASE_URL, json=payload, headers=headers)
+    if response.status_code == 200:
+        result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "❍ ᴇʀʀᴏʀ: API response missing!")
+        await message.reply_text(result)
+    else:
+        await message.reply_text(f"❍ ᴇʀʀᴏʀ: API failed. Status: {response.status_code}")
+    
