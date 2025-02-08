@@ -93,7 +93,7 @@ custom_responses = {
         "Good night jaan! Sweet dreams! 😘",
         "So jao pyaare! Raat bhar sapno me aana mat bhoolna! 😉",
         "Soya nahi abhi tak? Mujhe bhi late night baatein pasand hain! 😍"
-    ]
+    ],
 
     "hello": [
         "Hey jaan! 💕 Kaise ho?", 
