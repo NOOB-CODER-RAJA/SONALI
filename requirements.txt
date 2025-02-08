@@ -4,6 +4,7 @@ SpeechRecognition
 aiohttp 
 asyncio 
 deepai
+regex
 python-whois
 dnspython
 deep_translator
