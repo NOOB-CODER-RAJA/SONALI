@@ -17,8 +17,8 @@ vdb = mongo_client["vDb"]["v"]
 chatai_db = mongo_client["Word"]["WordDb"]
 
 # ✅ API Configuration
-API_KEY = "YOUR_OPENAI_API_KEY"
-BASE_URL = "https://api.openai.com/v1/chat/completions"
+API_KEY = "abacf43bf0ef13f467283e5bc03c2e1f29dae4228e8c612d785ad428b32db6ce"
+BASE_URL = "https://api.together.xyz/v1/chat/completions"
 
 # ✅ Helper Function: Check If User Is Admin
 async def is_admins(chat_id: int):
