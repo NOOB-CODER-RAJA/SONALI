@@ -32,6 +32,9 @@ async def chat_gpt(bot, message: Message):
     try:
         query = message.text.strip().lower()  # Message text ko clean aur lowercase karein
 
+        # Bot Typing Indicator ON
+        await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
+
         # 1️⃣ **Check for Custom Responses First**
         for key in custom_responses:
             if key in query:
