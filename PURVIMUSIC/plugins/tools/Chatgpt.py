@@ -293,10 +293,19 @@ async def chatbot_reply(client, message: Message):
     text = message.text.strip() if message.text else ""
     bot_username = (await bot.get_me()).username.lower()
 
+    # Typing indicator show karna
+    await bot.send_chat_action(chat_id, ChatAction.TYPING)
+
     # Agar message group mein hai
     if message.chat.type in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP]:
         
-        # MongoDB se reply dena
+        # Custom Message Check (Pehle check karna)
+        for key in custom_responses:
+            if key in text.lower():
+                await message.reply_text(custom_responses[key])
+                return
+
+        # MongoDB se reply dena (Agar custom response nahi mila)
         K = []
         if message.sticker:
             async for x in chatai_db.find({"word": message.sticker.file_unique_id}):
@@ -313,12 +322,6 @@ async def chatbot_reply(client, message: Message):
             else:
                 await message.reply_text(response)
             return
-
-        # Custom Message Check
-        for key in custom_responses:
-            if key in text.lower():
-                await message.reply_text(custom_responses[key])
-                return
 
         # Agar koi mention ya bot ka naam ho to API Response dena
         if f"@{bot_username}" in text.lower() or bot_username in text.lower():
@@ -336,7 +339,13 @@ async def chatbot_reply(client, message: Message):
     # Agar message private chat mein hai
     elif message.chat.type == enums.ChatType.PRIVATE:
         
-        # MongoDB se reply dena
+        # Custom Message Check (Pehle check karna)
+        for key in custom_responses:
+            if key in text.lower():
+                await message.reply_text(custom_responses[key])
+                return
+
+        # MongoDB se reply dena (Agar custom response nahi mila)
         K = []
         if message.sticker:
             async for x in chatai_db.find({"word": message.sticker.file_unique_id}):
@@ -354,13 +363,7 @@ async def chatbot_reply(client, message: Message):
                 await message.reply_text(response)
             return
 
-        # Custom Message Check
-        for key in custom_responses:
-            if key in text.lower():
-                await message.reply_text(custom_responses[key])
-                return
-
-        # API Response dena private chat mein
+        # API Response dena private chat mein (Agar custom response aur MongoDB se reply nahi mila)
         headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
         payload = {"model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", "messages": [{"role": "user", "content": text}]}
 
