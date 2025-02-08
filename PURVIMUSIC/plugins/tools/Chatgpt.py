@@ -1,4 +1,5 @@
 from pyrogram import Client, filters, enums
+from pyrogram.enums import ChatAction, ParseMode
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from motor.motor_asyncio import AsyncIOMotorClient as MongoClient
 import os
