@@ -56,9 +56,5 @@ async def chat_gpt(bot, message: Message):
 
         response_data = response.json()
 
-        if "choices" in response_data and response_data["choices"]:
-    print("Choices exist:", response_data["choices"])  # Indented correctly
-    result = response_data["choices"][0]["message"]["content"]
-    await message.reply_text(result)  # AI Response
-else:
-    await message.reply_text("❍ ᴇʀʀᴏʀ: No response from API.")
+        if response_data["choices"]:
+    print("Choices exist:", response_data["choices"])
