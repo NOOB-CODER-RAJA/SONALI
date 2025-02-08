@@ -12,7 +12,7 @@ from PURVIMUSIC import app as bot
 # ✅ MongoDB Connection
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb+srv://teamdaxx123:teamdaxx123@cluster0.ysbpgcp.mongodb.net/?retryWrites=true&w=majority")
 mongo_client = MongoClient(MONGO_URL)
-vdb = mongo_client["vDb"]["v"]
+status_db = mongo_client["ChatbotStatus"]["status"]
 chatai_db = mongo_client["Word"]["WordDb"]
 
 # ✅ API Configuration
@@ -36,7 +36,24 @@ bad_words = [
 stylish_bad_words = [normalize_text(word) for word in bad_words]
 bad_word_regex = re.compile(r'\b(' + "|".join(stylish_bad_words) + r')\b', re.IGNORECASE)
 
-# ✅ /chatbot Command with Inline Buttons
+# ✅ Custom Responses
+custom_responses = {
+    "hello": "Hi there! 😊",
+    "how are you": "I'm just a bot, but I'm doing great!",
+    "who made you": "I was created by a developer who loves coding!",
+    "bye": "Goodbye! Have a great day! 😊",
+    "love you": "Aww! Love you too ❤️",
+}
+
+# ✅ Inline Buttons for Chatbot Control
+CHATBOT_ON = [
+    [
+        InlineKeyboardButton(text="✅ Enable", callback_data="enable_chatbot"),
+        InlineKeyboardButton(text="🚫 Disable", callback_data="disable_chatbot"),
+    ],
+]
+
+# ✅ /chatbot Command with Buttons
 @bot.on_message(filters.command("chatbot") & filters.group)
 async def chatbot_control(client, message: Message):
     chat_id = message.chat.id
@@ -45,44 +62,42 @@ async def chatbot_control(client, message: Message):
     if not await is_admin(chat_id, user_id):
         return await message.reply_text("❍ ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ!")
 
-    is_disabled = await vdb.find_one({"chat_id": chat_id})
-
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("✅ Enable Chatbot", callback_data=f"chatbot_enable_{chat_id}")] if is_disabled else
-        [InlineKeyboardButton("🚫 Disable Chatbot", callback_data=f"chatbot_disable_{chat_id}")]
-    ])
-
     await message.reply_text(
-        "❍ **Chatbot Control Panel** ❍\n\n"
-        "📌 Click the button below to enable or disable chatbot:",
-        reply_markup=keyboard
+        f"**Chatbot Control Panel**\n\n"
+        f"📌 Chat: {message.chat.title}\n"
+        f"🛠 Choose an option to Enable/Disable chatbot.",
+        reply_markup=InlineKeyboardMarkup(CHATBOT_ON),
     )
 
 # ✅ Callback for Enable/Disable Buttons
-@bot.on_callback_query(filters.regex(r"chatbot_(enable|disable)_(\d+)"))
+@bot.on_callback_query(filters.regex(r"enable_chatbot|disable_chatbot"))
 async def chatbot_callback(client, query: CallbackQuery):
-    action, chat_id = query.data.split("_")[1:]
-    chat_id = int(chat_id)
+    chat_id = query.message.chat.id
     user_id = query.from_user.id
 
     if not await is_admin(chat_id, user_id):
-        return await query.answer("❍ ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ!", show_alert=True)
+        return await query.answer("❍ You are not an admin!", show_alert=True)
 
-    if action == "enable":
-        await vdb.delete_one({"chat_id": chat_id})
-        await query.message.edit_text("✅ **Chatbot Enabled!**\n\nNow the bot will respond to messages in this chat.")
+    action = query.data
+
+    if action == "enable_chatbot":
+        status_db.update_one({"chat_id": chat_id}, {"$set": {"status": "enabled"}}, upsert=True)
+        await query.answer("✅ Chatbot Enabled!", show_alert=True)
+        await query.edit_message_text(f"✅ **Chatbot has been enabled in {query.message.chat.title}.**")
     else:
-        await vdb.insert_one({"chat_id": chat_id})
-        await query.message.edit_text("🚫 **Chatbot Disabled!**\n\nBot will no longer respond in this chat.")
+        status_db.update_one({"chat_id": chat_id}, {"$set": {"status": "disabled"}}, upsert=True)
+        await query.answer("🚫 Chatbot Disabled!", show_alert=True)
+        await query.edit_message_text(f"🚫 **Chatbot has been disabled in {query.message.chat.title}.**")
 
-# ✅ Main Chatbot Handler with Typing Action & Sticker Reply Fix
+# ✅ Main Chatbot Handler
 @bot.on_message((filters.text | filters.sticker) & ~filters.bot)
 async def handle_messages(client, message: Message):
     chat_id = message.chat.id
     text = normalize_text(message.text) if message.text else ""
 
     # ✅ Check If Chatbot Is OFF
-    if await vdb.find_one({"chat_id": chat_id}):
+    chat_status = await status_db.find_one({"chat_id": chat_id})
+    if chat_status and chat_status.get("status") == "disabled":
         return
 
     # ✅ Bad Word Filter (Delete Message)
@@ -91,6 +106,12 @@ async def handle_messages(client, message: Message):
         return
 
     await bot.send_chat_action(chat_id, enums.ChatAction.TYPING)
+
+    # ✅ Check for Custom Responses First
+    for key in custom_responses:
+        if key in text.lower():
+            await message.reply_text(custom_responses[key])
+            return
 
     # ✅ MongoDB Check for Stickers & Text
     response_list = []
@@ -129,7 +150,7 @@ async def handle_messages(client, message: Message):
         else:
             await message.reply_text(f"❍ API failed. Status: {response.status_code}")
 
-# ✅ Auto-Learn Messages & Stickers (Sticker Reply Fix)
+# ✅ Auto-Learn Messages & Stickers
 @bot.on_message(filters.reply & ~filters.bot)
 async def learn_new_data(client, message: Message):
     if not message.reply_to_message:
@@ -150,3 +171,6 @@ async def learn_new_data(client, message: Message):
             is_chat = await chatai_db.find_one({"word": message.reply_to_message.text, "text": message.text})
             if not is_chat:
                 await chatai_db.insert_one({"word": message.reply_to_message.text, "text": message.text, "check": "none"})
+
+# ✅ Start the bot
+bot.run()
