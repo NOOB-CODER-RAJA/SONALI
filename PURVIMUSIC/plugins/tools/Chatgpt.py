@@ -241,8 +241,8 @@ custom_responses = {
 # ✅ Inline Buttons for Chatbot Control
 CHATBOT_ON = [
     [
-        InlineKeyboardButton(text="✅ Enable", callback_data="enable_chatbot"),
-        InlineKeyboardButton(text="🚫 Disable", callback_data="disable_chatbot"),
+        InlineKeyboardButton(text="ᴇɴᴀʙʟᴇ", callback_data="enable_chatbot"),
+        InlineKeyboardButton(text="ᴅɪsᴀʙʟᴇ", callback_data="disable_chatbot"),
     ],
 ]
 
@@ -253,12 +253,12 @@ async def chatbot_control(client, message: Message):
     user_id = message.from_user.id
 
     if not await is_admin(chat_id, user_id):
-        return await message.reply_text("❍ ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ!")
+        return await message.reply_text("❍ ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ !!")
 
     await message.reply_text(
-        f"**Chatbot Control Panel**\n\n"
-        f"📌 Chat: {message.chat.title}\n"
-        f"🛠 Choose an option to Enable/Disable chatbot.",
+        f"**๏ ᴄʜᴀᴛʙᴏᴛ ᴄᴏɴᴛʀᴏʟ ᴘᴀɴɴᴇʟ**\n\n"
+        f"✦ ᴄʜᴀᴛ ɴᴀᴍᴇ: {message.chat.title}\n"
+        f"✦ ᴄʜᴏᴏsᴇ ᴀɴ ᴏᴘᴛɪᴏɴ ᴛᴏ ᴇɴᴀʙʟᴇ / ᴅɪsᴀʙʟᴇ ᴄʜᴀᴛʙᴏᴛ.",
         reply_markup=InlineKeyboardMarkup(CHATBOT_ON),
     )
 
@@ -269,18 +269,18 @@ async def chatbot_callback(client, query: CallbackQuery):
     user_id = query.from_user.id
 
     if not await is_admin(chat_id, user_id):
-        return await query.answer("❍ You are not an admin!", show_alert=True)
+        return await query.answer("❍ ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ !!", show_alert=True)
 
     action = query.data
 
     if action == "enable_chatbot":
         status_db.update_one({"chat_id": chat_id}, {"$set": {"status": "enabled"}}, upsert=True)
-        await query.answer("✅ Chatbot Enabled!", show_alert=True)
-        await query.edit_message_text(f"✅ **Chatbot has been enabled in {query.message.chat.title}.**")
+        await query.answer("✅ ᴄʜᴀᴛʙᴏᴛ ᴇɴᴀʙʟᴇᴅ !!", show_alert=True)
+        await query.edit_message_text(f"**✦ ᴄʜᴀᴛʙᴏᴛ ʜᴀs ʙᴇᴇɴ ᴇɴᴀʙʟᴇᴅ ɪɴ {query.message.chat.title}.**")
     else:
         status_db.update_one({"chat_id": chat_id}, {"$set": {"status": "disabled"}}, upsert=True)
-        await query.answer("🚫 Chatbot Disabled!", show_alert=True)
-        await query.edit_message_text(f"🚫 **Chatbot has been disabled in {query.message.chat.title}.**")
+        await query.answer("🚫 ᴄʜᴀᴛʙᴏᴛ ᴅɪsᴀʙʟᴇᴅ !!", show_alert=True)
+        await query.edit_message_text(f"**✦ ᴄʜᴀᴛʙᴏᴛ ʜᴀs ʙᴇᴇɴ ᴅɪsᴀʙʟᴇᴅ ɪɴ {query.message.chat.title}.**")
 
 # ✅ Main Chatbot Handler
 @bot.on_message((filters.text | filters.sticker) & ~filters.bot)
