@@ -172,5 +172,3 @@ async def learn_new_data(client, message: Message):
             if not is_chat:
                 await chatai_db.insert_one({"word": message.reply_to_message.text, "text": message.text, "check": "none"})
 
-# ✅ Start the bot
-bot.run()
