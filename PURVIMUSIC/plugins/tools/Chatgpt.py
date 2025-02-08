@@ -158,7 +158,9 @@ custom_responses = {
         "Aaj kuch naughty baatein karein? 😘", 
         "Tum itne hot lag rahe ho ki mujhe blushing aa rahi hai! 😍", 
         "Kya tum mujhe apni dil ki rani banaoge? ❤️"
-    ]
+    ],
+
+    
     "hello": "Hey jaan! 💕 Kaisi ho?",
     "i love you": "Awww! Sach me? 😘",
     "good morning": "Good Morning pyaare! 🌞",
