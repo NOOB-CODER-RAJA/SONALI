@@ -47,7 +47,7 @@ bad_words = [
     
 
     # ✅ Common Hindi Gaaliyan in English Font
-    "chutiya", "madarchod", "behenchod", "gandu", "randi", "bhosdi", "hijda", "lund", "chod", "jhaatu", 
+    "chutiya", "madarchod", "Madhrachod", "Madharchod", "betichod", "behenchod", "gandu", "randi", "bhosdi", "hijda", "lund", "chod", "jhaatu", 
     "harami", "kamina", "saala", "gand", "pagal", "bhadwa", "chut", "bevkoof", "nikkamma", "haramkhor", 
     "chaalu", "fattuu", "dhakkan", "gadha", "kutta", "suvar", "besharam", "bhosdike", "teri maa ki", 
     "teri behan ki", "chutad", "haramzaada", "haram ki aulaad", "suvar ka baccha", "gand ka keeda", 
